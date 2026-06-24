@@ -1,6 +1,6 @@
 {
-  "_comment": "Pi model providers. Lean placeholder. Add providers as needed; do not invent provider URLs. The 'project' field is consumed by skeleton-setup.sh: if content/PI_PROJECT_NAME is provided, it replaces the current value here.",
-  "project": "oss-starter",
+  "_comment": "Pi model providers. Lean placeholder. Add providers as needed; do not invent provider URLs. The 'project' placeholder is consumed by skeleton-setup.sh: if content/PI_PROJECT_NAME is provided, it substitutes the slug.",
+  "project": "<project-slug>",
   "providers": {},
   "defaultProvider": null
 }

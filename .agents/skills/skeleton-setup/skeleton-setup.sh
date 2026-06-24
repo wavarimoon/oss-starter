@@ -12,6 +12,8 @@
 #   skeleton-setup.sh generate-codeowners
 #   skeleton-setup.sh substitute-pi-name my-slug
 #   skeleton-setup.sh apply-readme
+#   skeleton-setup.sh apply-contributing
+#   skeleton-setup.sh apply-security
 #   skeleton-setup.sh apply-agents
 #   skeleton-setup.sh apply-context
 #   skeleton-setup.sh apply-handoff
@@ -123,6 +125,8 @@ Subcommands:
   generate-codeowners         Read content/MAINTAINERS.md, write .github/CODEOWNERS.
   substitute-pi-name <slug>   Substitute <project-slug> in .pi/mcp.json + .pi/settings.json.
   apply-readme                Copy content/README.md to root README.md.
+  apply-contributing           Copy content/CONTRIBUTING.md to root CONTRIBUTING.md.
+  apply-security               Copy content/SECURITY.md to root SECURITY.md.
   apply-agents                Copy content/AGENTS.md to root AGENTS.md.
   apply-context               Copy content/CONTEXT.md to root CONTEXT.md.
   apply-handoff               Copy content/HANDOFF.md to root HANDOFF.md.
@@ -237,6 +241,27 @@ cmd_apply_content_file() {
     log "$dest <- $src"
 }
 
+cmd_apply_readme() {
+    # When no content/README.md is provided, write a minimal placeholder
+    # instead of leaving the skeleton README (oss-starter advertisement) in place.
+    local src="$CONTENT_DIR/README.md"
+    if [[ -f "$src" ]]; then
+        if [[ $DRY_RUN -eq 1 ]]; then
+            dry_run_only "cp $src $ROOT/README.md"
+            return
+        fi
+        cp "$src" "$ROOT/README.md"
+        log "README.md <- $src"
+    else
+        if [[ $DRY_RUN -eq 1 ]]; then
+            dry_run_only "write placeholder README.md (no content/README.md)"
+            return
+        fi
+        printf '# <!-- TODO: replace with your project README -->\n' > "$ROOT/README.md"
+        log "README.md <- placeholder (no content/README.md provided)"
+    fi
+}
+
 cmd_self_cleanup() {
     if [[ ! -d "$SKILL_DIR" ]]; then
         log "skill folder already gone — nothing to do"
@@ -246,6 +271,15 @@ cmd_self_cleanup() {
         dry_run_only "rm -rf $SKILL_DIR"
         return
     fi
+    # Fix AGENTS.md reference to the now-deleted skill folder.
+    local agents_md="$ROOT/AGENTS.md"
+    if [[ -f "$agents_md" ]]; then
+        # Replace the stale skeleton-setup content/ path with a generic reference.
+        if grep -q 'skeleton-setup/content/PI_PROJECT_NAME' "$agents_md"; then
+            sed -i.bak 's|set \.agents/skills/skeleton-setup/content/PI_PROJECT_NAME|provide content/PI_PROJECT_NAME when running the skeleton-setup skill|' "$agents_md"
+            rm -f "$agents_md.bak"
+        fi
+    fi
     rm -rf "$SKILL_DIR"
     log "skill folder removed: $SKILL_DIR"
 }
@@ -254,30 +288,64 @@ cmd_apply_all() {
     # Discover what's in content/ and call the right subcommands in order.
     # Stops before self-cleanup so the agent can run Q3.
     log "apply-all: discovering content/ and applying"
-    if [[ -f "$CONTENT_DIR/README.md" ]]; then
-        cmd_apply_content_file "README.md" "README.md"
-    fi
+    local applied=0
+    local skipped=0
+    local warnings=0
+    # README: always apply (placeholder if no content/)
+    cmd_apply_readme
+    applied=$((applied + 1))
     if [[ -f "$CONTENT_DIR/LICENSE" ]]; then
         local id
         id="$(tr -d '[:space:]' < "$CONTENT_DIR/LICENSE")"
         cmd_apply_license "$id"
+        applied=$((applied + 1))
+    else
+        skipped=$((skipped + 1))
     fi
     if [[ -f "$CONTENT_DIR/AGENTS.md" ]]; then
         cmd_apply_content_file "AGENTS.md" "AGENTS.md"
+        applied=$((applied + 1))
+    else
+        skipped=$((skipped + 1))
     fi
     if [[ -f "$CONTENT_DIR/CONTEXT.md" ]]; then
         cmd_apply_content_file "CONTEXT.md" "CONTEXT.md"
+        applied=$((applied + 1))
+    else
+        skipped=$((skipped + 1))
     fi
     if [[ -f "$CONTENT_DIR/HANDOFF.md" ]]; then
         cmd_apply_content_file "HANDOFF.md" "HANDOFF.md"
+        applied=$((applied + 1))
+    else
+        skipped=$((skipped + 1))
+    fi
+    if [[ -f "$CONTENT_DIR/CONTRIBUTING.md" ]]; then
+        cmd_apply_content_file "CONTRIBUTING.md" "CONTRIBUTING.md"
+        applied=$((applied + 1))
+    else
+        skipped=$((skipped + 1))
+    fi
+    if [[ -f "$CONTENT_DIR/SECURITY.md" ]]; then
+        cmd_apply_content_file "SECURITY.md" "SECURITY.md"
+        applied=$((applied + 1))
+    else
+        skipped=$((skipped + 1))
     fi
     if [[ -f "$CONTENT_DIR/MAINTAINERS.md" ]]; then
         cmd_generate_codeowners
+        applied=$((applied + 1))
+    else
+        skipped=$((skipped + 1))
     fi
     if [[ -f "$CONTENT_DIR/PI_PROJECT_NAME" ]]; then
         local slug
         slug="$(tr -d '[:space:]' < "$CONTENT_DIR/PI_PROJECT_NAME")"
         cmd_substitute_pi_name "$slug"
+        applied=$((applied + 1))
+    else
+        warnings=$((warnings + 1))
+        log "WARNING: PI_PROJECT_NAME not in content/ — .pi/ project field left as placeholder"
     fi
     # Ensure CLAUDE.md -> AGENTS.md symlink exists.
     if [[ ! -L "$ROOT/CLAUDE.md" ]]; then
@@ -289,7 +357,7 @@ cmd_apply_all() {
             log "CLAUDE.md -> AGENTS.md symlink (re)created"
         fi
     fi
-    log "apply-all: done. Run Q3 (pre-cleanup offer) before invoking self-cleanup."
+    log "apply-all: $applied applied, $skipped skipped (no content/ file), ${warnings} warning(s). Run Q3 (pre-cleanup offer) before invoking self-cleanup."
 }
 
 # ────────────────────────────── main ─────────────────────────────────────────
@@ -299,7 +367,9 @@ case "$SUBCMD" in
     apply-license)          guard_skill_present; cmd_apply_license "${SUBCMD_ARGS[@]:-}" ;;
     generate-codeowners)    guard_skill_present; cmd_generate_codeowners ;;
     substitute-pi-name)     guard_skill_present; cmd_substitute_pi_name "${SUBCMD_ARGS[@]:-}" ;;
-    apply-readme)           guard_skill_present; cmd_apply_content_file "README.md" "README.md" ;;
+    apply-readme)           guard_skill_present; cmd_apply_readme ;;
+    apply-contributing)     guard_skill_present; cmd_apply_content_file "CONTRIBUTING.md" "CONTRIBUTING.md" ;;
+    apply-security)         guard_skill_present; cmd_apply_content_file "SECURITY.md" "SECURITY.md" ;;
     apply-agents)           guard_skill_present; cmd_apply_content_file "AGENTS.md" "AGENTS.md" ;;
     apply-context)          guard_skill_present; cmd_apply_content_file "CONTEXT.md" "CONTEXT.md" ;;
     apply-handoff)          guard_skill_present; cmd_apply_content_file "HANDOFF.md" "HANDOFF.md" ;;

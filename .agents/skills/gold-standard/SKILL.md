@@ -1,6 +1,6 @@
 ---
 name: gold-standard
-description: Project coding standard. Universal principles apply to every project regardless of language. Stack-specific rules live in the marked section at the bottom and are filled in when the project adopts a toolchain.
+description: Project coding standard. Universal principles apply to every project regardless of language. Stack-specific rules live in the marked section at the bottom and are filled in when the project adopts a toolchain. Examples are illustrative — principles are independent of the language shown.
 ---
 
 # Gold Standard
@@ -31,10 +31,11 @@ Code flows one direction. Define your project's direction here:
 [Presentation] → [Business Logic] → [Data Access]
 ```
 
-Examples:
-- **Web app:** UI Components → Hooks/Services → API/Database
+This generalizes to any project shape:
+- **Web app:** Routes/Components → Services/Hooks → API/Database
 - **CLI:** Commands → Core Logic → File System/Network
 - **Library:** Public API → Internal Modules → Primitives
+- **Service:** Handlers → Domain Logic → Storage/External APIs
 
 **Rules:**
 - Lower layers never import from higher layers
@@ -46,66 +47,48 @@ Examples:
 When features interact, use **typed contracts**, not ad-hoc imports.
 
 **The Shared Data Rule:**
-If two components need the same data, they use the **same hook/function**, not parallel implementations.
-
-```ts
-// ❌ Bad: Two components fetching data independently
-function UserList() { const users = fetchUsers(); ... }
-function UserStats() { const users = fetchUsers(); ... }
-
-// ✅ Good: Shared data fetching
-function useUsers() { return fetchUsers(); }
-```
+If two consumers need the same data, they use the **same accessor**, not parallel implementations. The accessor might be a function, a hook, a service method, or a module export — the principle is that there is one canonical way to get that data.
 
 **The Contract Rule:**
-Features communicate through defined interfaces, not internal imports.
-
-```ts
-// ❌ Bad: Feature A importing Feature B's internal function
-import { processPayment } from '@/features/billing/internal';
-
-// ✅ Good: Feature A uses Feature B's public API
-const processPayment = useBilling().processPayment;
-```
+Features communicate through defined interfaces, not internal imports. A feature's public API is its contract with the rest of the system.
 
 **Why this matters:** Without these rules, every feature creates its own data fetching and processing — leading to duplication, inconsistency, and tight coupling.
 
-### State management
+### State management (when applicable)
 
 Use this decision tree when choosing where to store state:
 
 ```
-Is it local to one component? → Local state
-Is it shared across 2-3 components? → Lift state up or context
-Is it global and rarely changes? → Context/config
-Is it global and changes frequently? → State manager
-Is it server data? → Data fetching library
-Is it URL-relevant? → URL parameters
+Is it local to one consumer? → Keep it local
+Is it shared across a few consumers? → Lift to nearest common ancestor
+Is it global and rarely changes? → Configuration / context
+Is it global and changes frequently? → Dedicated state store
+Is it server data? → Server, cached locally
+Is it ephemeral but shareable? → URL / arguments
 ```
 
-**Key principle:** Prefer the simplest solution that works. Don't reach for a state manager when lifting state up suffices.
+**Key principle:** Prefer the simplest solution that works. Don't reach for a global store when lifting state one level up suffices.
 
 ## Code quality
 
 ### Error handling
 
-**Frontend:**
-- Catch at the boundary (error boundaries, try/catch in handlers)
-- Display user-friendly messages
+**API / service boundary:**
+- Catch at the boundary (routers, command handlers, service entry points)
+- Return user-visible messages from the boundary
 - Log technical details for debugging
 
-**Backend/API:**
+**Internal logic:**
 - Validate inputs at the top of the function
 - Return early on errors
-- Don't nest `if` blocks more than 2 levels deep
+- Don't nest more than 2 levels deep
 - Use typed errors, not generic `Error` with string messages
 
 ```ts
-// ✅ Good: Fail fast, return early
+// ✅ Good: Fail fast, return early (language doesn't matter)
 async function createUser(args) {
   if (!args.email) throw new ValidationError("Email required");
   if (!isValidEmail(args.email)) throw new ValidationError("Invalid email");
-  
   // ... main logic
 }
 ```
@@ -114,14 +97,12 @@ async function createUser(args) {
 
 **What to test:**
 - Business logic and pure functions
-- User interactions (clicks, form submissions)
 - Edge cases and error paths
-- Integration between components
+- Integration between modules/systems
 
 **What NOT to test:**
-- Framework internals (React, Django, etc.)
+- Framework/standard-library internals
 - Third-party libraries (assume they work)
-- Style/CSS (unless visual regression testing)
 - Trivial getters/setters
 
 **Rule:** If the test breaks when you refactor without changing behavior, the test is wrong.

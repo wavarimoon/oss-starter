@@ -1,9 +1,8 @@
 name: oss-gate
 
 # The open-source-ready gate. Runs on every PR and every push to main.
-# Eight deterministic file-presence checks (numbered 1-5, 7-8, 10; check 6
-# was removed when CODEOWNERS became optional, check 9 was removed when
-# the archive model moved to single-file plans).
+# Eight deterministic file-presence checks. Six and nine were removed
+# (CODEOWNERS became optional; archive hygiene became moot).
 # No language assumption, no runtime deps. Fails the PR if any check fails.
 
 on:
@@ -74,9 +73,9 @@ jobs:
             check "PR template references CONTRIBUTING.md" "fail" ".github/PULL_REQUEST_TEMPLATE.md is missing, empty, or does not reference CONTRIBUTING.md"
           fi
 
-          # Check 6: (removed) CODEOWNERS check — CODEOWNERS is optional and created by skeleton-setup from MAINTAINERS.md.
+          # --- historical footnote: removed Check 6 was CODEOWNERS (now optional, created by skeleton-setup) ---
 
-          # Check 7: plans/in-flight/*/v2.md ↔ plans/ROADMAP.md consistency.
+          # Check 6: plans/in-flight/*/v2.md ↔ plans/ROADMAP.md consistency.
           # If any in-flight plan folder exists with a v2.md, ROADMAP.md must
           # have a matching entry under the "## In flight" section. This
           # catches the common drift: someone wrote a v2.md and forgot to
@@ -102,7 +101,7 @@ jobs:
             check "ROADMAP.md tracks in-flight plans" "fail" "$inflight_detail"
           fi
 
-          # Check 8: plans/ROADMAP.md has the two required sections.
+          # Check 7: plans/ROADMAP.md has the two required sections.
           # Backlog / In flight — guards against accidental reformat that
           # breaks the plan-feature skill's parsing. The "Executed" section
           # was removed when the skeleton's archive model moved to a single
@@ -124,11 +123,9 @@ jobs:
             check "ROADMAP.md has Backlog/In flight sections" "fail" "$roadmap_detail"
           fi
 
-          # Check 9: (removed) was archive hygiene — moot now that executed
-          # plans live in plans/archive/<slug>.md (single files) and the
-          # ROADMAP no longer tracks Executed entries.
+          # --- historical footnote: removed Check 9 was archive hygiene (moot with single-file plans) ---
 
-          # Check 10: no orphan flat-folder plan files.
+          # Check 8: no orphan flat-folder plan files.
           # The folder-per-plan structure means plan files must live under
           # plans/in-flight/ or plans/archive/. A loose file like
           # plans/my-plan-v2.md at the top level is the old pattern sneaking

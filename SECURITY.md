@@ -13,7 +13,7 @@
 Instead, please report them responsibly via:
 
 - **GitHub Security Advisories** (recommended): Use the repository's Security tab → Advisories → New draft security advisory
-- **Email**: security@{{DOMAIN}} (set up before first release)
+- **Email**: <!-- TODO: set your security contact email before first release, then remove this comment -->
 
 ### What to include
 

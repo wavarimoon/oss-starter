@@ -319,8 +319,7 @@ This script does all four mechanical steps atomically:
 
 The script is idempotent: re-running it on an already-archived plan is a noop. Run it in the same commit as the last execution step (or the commit immediately after, if the last step is a merge).
 
-`oss-gate.yml` Checks 7–10 verify the result:
+`oss-gate.yml` verifies the result with:
 - Check 7: ROADMAP.md tracks in-flight plans
-- Check 8: ROADMAP.md has the three sections
-- Check 9: Executed entries no longer link to `in-flight/`
+- Check 8: ROADMAP.md has the required sections
 - Check 10: no orphan flat-folder plan files at `plans/` top level

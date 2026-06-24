@@ -55,7 +55,7 @@ For each file below, decide based on what you actually see — do not blindly re
 | `HANDOFF.md` | missing from `content/` | Draft a minimal starting point (one-paragraph "what this project is", "what's done", "next steps"). Write into `content/HANDOFF.md` so Phase 5's `apply-handoff` picks it up. |
 
 **Anti-patterns for this phase:**
-- Do **not** write the full `README.md` from inference. The README is the user's voice — Phase 5 only copies `content/README.md` if it exists, otherwise leaves the skeleton's in place for the user to author.
+- Do **not** write the full `README.md` from inference. The README is the user's voice — Phase 5 writes a minimal placeholder if `content/README.md` is absent, so the skeleton README never ships as a default.
 - Do **not** invent a license. That's Q2's job in Phase 4.
 - Do **not** rewrite `AGENTS.md` — it's the agent constitution and must stay aligned with the skeleton's own.
 - Do **not** generate `CONTEXT.md` / `HANDOFF.md` if the user already supplied them; respect what they wrote.
@@ -94,6 +94,8 @@ Or call individual subcommands if the agent wants finer control:
 ./.agents/skills/skeleton-setup/skeleton-setup.sh generate-codeowners
 ./.agents/skills/skeleton-setup/skeleton-setup.sh substitute-pi-name my-slug
 ./.agents/skills/skeleton-setup/skeleton-setup.sh apply-readme
+./.agents/skills/skeleton-setup/skeleton-setup.sh apply-contributing
+./.agents/skills/skeleton-setup/skeleton-setup.sh apply-security
 ./.agents/skills/skeleton-setup/skeleton-setup.sh apply-agents
 ./.agents/skills/skeleton-setup/skeleton-setup.sh apply-context
 ./.agents/skills/skeleton-setup/skeleton-setup.sh apply-handoff
@@ -123,7 +125,7 @@ After Q3 resolution:
 ./.agents/skills/skeleton-setup/skeleton-setup.sh self-cleanup
 ```
 
-This is `rm -rf .agents/skills/skeleton-setup/`. After this, the script itself is gone — re-invoking will fail (which is correct: the skill is one-shot).
+This is `rm -rf .agents/skills/skeleton-setup/`. It also patches the stale `AGENTS.md` reference to `skeleton-setup/content/PI_PROJECT_NAME` (replacing it with a generic mention since that folder no longer exists). After this, the script itself is gone — re-invoking will fail (which is correct: the skill is one-shot).
 
 ### Phase 8 — Report
 Print a summary: what was written, what was kept/relocated, what's next:
@@ -178,7 +180,7 @@ Before `self-cleanup`, list the files about to be deleted (one `ls -la`) and ask
 | `apply-license <spdx-id>` | Copy `licenses/<file>` → root `LICENSE` |
 | `generate-codeowners` | Read `content/MAINTAINERS.md` → write `.github/CODEOWNERS` |
 | `substitute-pi-name <slug>` | Replace `<project-slug>` in `.pi/mcp.json` + `.pi/settings.json` |
-| `apply-readme` / `-agents` / `-context` / `-handoff` | Copy `content/<file>` → root `<file>` |
+| `apply-readme` / `-contributing` / `-security` / `-agents` / `-context` / `-handoff` | Copy `content/<file>` → root `<file>` |
 | `apply-all` | Discover and dispatch. Stops before `self-cleanup`. |
 | `self-cleanup` | `rm -rf .agents/skills/skeleton-setup/`. The script is consumed by this. |
 | `--help` | Print usage |

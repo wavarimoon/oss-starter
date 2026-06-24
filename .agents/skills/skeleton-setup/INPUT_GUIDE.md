@@ -18,8 +18,10 @@ The agent running the skill will:
 
 | File | Required? | Purpose | If missing |
 |---|---|---|---|
-| `README.md` | recommended | The project's README. Replaces the skeleton's README. | Skeleton README kept |
+| `README.md` | recommended | The project's README. Replaces the skeleton's README. | Placeholder README written |
 | `LICENSE` | recommended | One SPDX identifier (lowercase). See `licenses/README.md`. Replaces the skeleton's LICENSE. | Apache-2.0 (skeleton default) |
+| `CONTRIBUTING.md` | optional | Your contribution guide. Phase 2.5 rewrites the skeleton's to remove oss-starter framing. | Skeleton CONTRIBUTING.md kept (Phase 2.5 may rewrite) |
+| `SECURITY.md` | optional | Your security policy. Phase 2.5 rewrites the skeleton's to replace placeholders. | Skeleton SECURITY.md kept (Phase 2.5 may rewrite) |
 | `AGENTS.md` | optional | A project-specific cross-harness AI agent constitution. Replaces the skeleton's generic AGENTS.md. | Skeleton AGENTS.md kept |
 | `CONTEXT.md` | optional | A domain glossary for AI sessions. Replaces the skeleton's CONTEXT.md. | Skeleton CONTEXT.md kept |
 | `HANDOFF.md` | optional | The project's first session handoff doc. Replaces the skeleton's HANDOFF.md. | Skeleton HANDOFF.md kept |

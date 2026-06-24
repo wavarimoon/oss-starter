@@ -1,6 +1,6 @@
 {
-  "_comment": "Pi MCP server config. The 'project' field is consumed by skeleton-setup.sh: if content/PI_PROJECT_NAME is provided when running the skill, it replaces the current value here. Remove this _comment before committing if you find it noisy.",
-  "project": "oss-starter",
+  "_comment": "Pi MCP server config. The 'project' placeholder is consumed by skeleton-setup.sh: if content/PI_PROJECT_NAME is provided when running the skill, it substitutes the slug. Remove this _comment before committing if you find it noisy.",
+  "project": "<project-slug>",
   "mcpServers": {
     "engram": {
       "command": "node",

@@ -54,7 +54,7 @@ For any non-trivial work (5+ files, new deps, schema/auth/crypto changes), start
 
 ## Memory & continuity
 
-- **Engram** is wired via `.pi/mcp.json`. The project slug is the `project` field there. If you fork oss-starter for a new project, set `.agents/skills/skeleton-setup/content/PI_PROJECT_NAME` and the skeleton-setup skill will substitute it.
+- **Engram** is wired via `.pi/mcp.json`. The project slug is the `project` field there. If you fork oss-starter for a new project, provide `content/PI_PROJECT_NAME` when running the skeleton-setup skill and it will substitute the slug.
 - Session start: read `HANDOFF.md` → read `CONTEXT.md` → query `mem_context`.
 - Session end: update `HANDOFF.md` → `mem_session_summary`.
 - After compact: save the summary, then `mem_context` before continuing.
