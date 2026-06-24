@@ -30,7 +30,7 @@ Before doing anything:
 3. `INPUT_GUIDE.md` — the input contract (what files mean in `content/`).
 4. `licenses/README.md` — SPDX id reference for license choice.
 
-## The flow (8 phases)
+## The flow (8 numbered phases + 2.5)
 
 The agent drives this. The mechanical script (sibling `skeleton-setup.sh`) is invoked at phases 5 and 7. Judgment is the agent's; the script is dumb on purpose.
 
@@ -39,6 +39,30 @@ Confirm the user wants to materialize the project. Read this file, `INPUT_GUIDE.
 
 ### Phase 2 — Inference
 Read whatever is in `content/`. Form a picture: project name, domain, target audience, license hints, maintainers, anything else.
+
+### Phase 2.5 — Context expansion & overwrites (judgment)
+
+The user may have only provided a basic `content/README.md` or a `content/idea.txt`. The repo-root OSS files (`CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `CONTEXT.md`, `HANDOFF.md`) ship from the skeleton and will contain oss-starter-flavored language or literal template placeholders. **Before Phase 3's clarifying questions, the agent must rewrite the ones that need it** so the project is never published with skeleton leftovers.
+
+For each file below, decide based on what you actually see — do not blindly rewrite. Use the judgment signal in the first column.
+
+| File | Judgment signal → rewrite if… | Rewrite to… |
+|---|---|---|
+| `CONTRIBUTING.md` | contains "oss-starter", "self-maintaining project", or "AI layer / OSS layer" framing | Generic, welcoming contribution guide tailored to the inferred language/stack. Keep the project-agnostic bits (decision-making tiers, the "changing the OSS contract" section) and drop the skeleton-specific narrative. |
+| `SECURITY.md` | contains `{{DOMAIN}}`, `security@example.com`, or other unfilled placeholders | Either replace with the inferred domain (e.g. `security@<project-domain>`) **or** downgrade unfilled placeholders to a clearly marked `<!-- TODO: set domain before first release -->` block. Never leave `{{...}}` in a file that ships. |
+| `CODE_OF_CONDUCT.md` | not a clean Contributor Covenant (e.g. skeleton leftovers, missing pledge, custom hacks) | A clean Contributor Covenant v2.1. If it's already clean, leave it alone. |
+| `CONTEXT.md` | missing from `content/` | Draft a minimal starting point based on the inferred project shape (one-paragraph problem statement, target users, key terminology). Write into `content/CONTEXT.md` so Phase 5's `apply-context` picks it up. |
+| `HANDOFF.md` | missing from `content/` | Draft a minimal starting point (one-paragraph "what this project is", "what's done", "next steps"). Write into `content/HANDOFF.md` so Phase 5's `apply-handoff` picks it up. |
+
+**Anti-patterns for this phase:**
+- Do **not** write the full `README.md` from inference. The README is the user's voice — Phase 5 only copies `content/README.md` if it exists, otherwise leaves the skeleton's in place for the user to author.
+- Do **not** invent a license. That's Q2's job in Phase 4.
+- Do **not** rewrite `AGENTS.md` — it's the agent constitution and must stay aligned with the skeleton's own.
+- Do **not** generate `CONTEXT.md` / `HANDOFF.md` if the user already supplied them; respect what they wrote.
+
+**Coordination with later phases:** files drafted into `content/` here are consumed by Phase 5's `apply-context` / `apply-handoff` subcommands. Phase 6's pre-cleanup offer still applies — anything the agent wrote into `content/` is part of the draft inventory the user gets to keep/move/delete.
+
+**Record the rewrites** (which files were rewritten, why) in a short note that Phase 8's report will surface, so the human can audit.
 
 ### Phase 3 — Clarification (judgment)
 Ask 1–3 targeted questions for anything ambiguous. **This is where Q1 lives.**
