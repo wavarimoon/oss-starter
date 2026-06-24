@@ -112,58 +112,40 @@ Next steps:
   4. Verify the project's oss-gate passes (or write your own first).
 ```
 
+## How to talk to the user at Q1/Q2/Q3
+
+**Be terse.** Two to four lines max per response. The user knows what they're doing. Don't explain the contract — just ask the question and stop.
+
+Bad: long bullet list of acceptable inputs, full paragraph explaining why defaults don't work, repeating back what the contract says.
+
+Good: one or two sentences, then the question.
+
 ## Q1: Empty-draft handling
 
-If `content/` is empty (or contains only `README.md` with no real content), the agent must **refuse to run the skill** and ask the user to drop something. Examples of acceptable inputs:
+If `content/` is empty or doesn't exist, refuse to run. Tell the user to drop something (a README draft, a project idea, a LICENSE choice, an image — anything). One line, then stop.
 
-- A project idea (one sentence or several paragraphs).
-- A README draft.
-- A LICENSE choice (SPDX id).
-- Screenshots, mockups, or images.
-- Reference docs or links to existing projects.
-- Any combination of the above.
-
-Sample refusal:
-
-> "The `content/` folder is empty. The skeleton-setup skill needs at least a project idea to work with. Drop something in `content/` — a README draft, a one-paragraph project idea, screenshots, or anything that helps me grasp what you want to build. Once you've added it, ask me to run skeleton-setup again."
-
-Do NOT proceed with empty content/. Do NOT silently use defaults. The whole point of this skill is that it's driven by the user's inputs.
+> Example: "`content/` is empty. Drop a README draft, a project idea, or any file in there and ask me to run skeleton-setup again."
 
 ## Q2: License decision
 
-When `content/LICENSE` is absent, the agent must present a recommendation rather than silently picking. The reasoning and the alternatives are the value.
+If `content/LICENSE` is absent, pick a recommendation from the rubric below. Tell the user: the recommended SPDX id (one-line reason), one alternative (one-line tradeoff), then ask them to confirm or pick something else. Wait for explicit answer. Then write `content/LICENSE` with the chosen id.
 
-**License recommendation rubric** (apply based on inferred project signals):
+> Example: "I recommend `apache-2.0` (default, patent grant). Alternative: `mit` (simpler, no patent grant). Which? You can also name a different one."
 
-| Signal in `content/` | Recommend | Reasoning |
-|---|---|---|
-| Project is a library or tool for others to use | `mit` | Maximum compatibility, no friction for downstream |
-| Project is enterprise / corporate / patent-sensitive | `apache-2.0` | Explicit patent grant; default for the skeleton |
-| Project is a C/C++/system tool | `bsd-3-clause` | Common in those ecosystems; minor "no endorsement" clause |
-| Project has a clear license preference (e.g. user mentions "copyleft" or "MPL") | match the user's signal | The user is more likely to be right than our inference |
-| Project is a network service that you want to stay free | `agpl-3.0` | Closes the "use it as a service" loophole |
-| No signal at all | `apache-2.0` | The skeleton's documented default |
-
-Format the recommendation to the user as:
-
-> "Based on [signal you saw], I recommend **`<spdx-id>`** ([one-sentence description from licenses/README.md]). The main alternative is **`<other-id>`** ([tradeoff]). Which do you want? You can also pick a different license if you have one in mind — just say so."
-
-Wait for explicit confirmation. After confirmation, write `content/LICENSE` with the chosen id (single line, lowercase). Then proceed.
+| Signal in `content/` | Recommend |
+|---|---|
+| Library / tool for others | `mit` |
+| Enterprise / corporate / patent-sensitive | `apache-2.0` |
+| C/C++/system tool | `bsd-3-clause` |
+| User mentions "copyleft" or "MPL" | match their signal |
+| Network service you want to keep free | `agpl-3.0` |
+| No signal | `apache-2.0` |
 
 ## Q3: Pre-cleanup offer
 
-The skill folder's self-cleanup is destructive. The user has the right to:
+Before `self-cleanup`, list the files about to be deleted (one `ls -la`) and ask: delete everything, keep specific files, move specific files, or abort. Wait for answer.
 
-- Keep specific files (move them to a project location before the kill).
-- Move files to specific paths.
-- Abort entirely (preserve the skill folder and re-run later).
-
-Default to "ask, don't assume". The user said "yes, the user can say delete everything", but the agent must still confirm — never auto-cleanup.
-
-The pre-cleanup message must include:
-1. The fact that this is one-shot (no second run).
-2. The full list of files in the skill folder that will be deleted (`ls -la .agents/skills/skeleton-setup/`).
-3. The four options: delete, keep, move, abort.
+> Example: "About to delete `.agents/skills/skeleton-setup/` (the SKILL.md, script, licenses/, and any draft in content/). Delete everything, keep specific files, move specific files, or abort?"
 
 ## Mechanical subcommands reference
 
