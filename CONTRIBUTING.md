@@ -9,7 +9,7 @@ By participating, you agree to the [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md).
 A self-maintaining open-source project with two layers:
 
 - **AI layer** (`AGENTS.md`, `.pi/`, `.agents/skills/`) — convention + skill surface for AI coding agents working on this repo.
-- **OSS layer** (`CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `.github/`) — GitHub-canonical contribution + community + security surface, with two CI workflows that auto-maintain the docs (`oss-gate.yml` and `doc-drift.yml`).
+- **OSS layer** (`CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `.github/`) — GitHub-canonical contribution + community + security surface, with the `oss-gate.yml` CI workflow enforcing the OSS contract on every PR.
 
 ## First PRs
 
@@ -39,7 +39,7 @@ When in doubt: open an issue first. The PR template will guide you.
 1. Fork the repo (or create a branch if you have write access).
 2. Make your change. Keep it small and focused — one PR per concern.
 3. Fill in the [PR template](.github/PULL_REQUEST_TEMPLATE.md).
-4. Open the PR. The `oss-gate` workflow will check the OSS file surface and the `doc-drift` workflow will run on merge to keep docs current.
+4. Open the PR. The `oss-gate` workflow will check the OSS file surface.
 5. Expect review feedback. We aim to respond within a week.
 
 ## How this project (and its OSS contract) evolves

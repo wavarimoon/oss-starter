@@ -6,7 +6,7 @@
 
 ## What's in the box
 
-- **Self-maintaining documentation** — `oss-gate` enforces the OSS contract on every PR; `doc-drift` auto-syncs docs on merge if code changes drift away from them.
+- **Self-maintaining documentation** — `oss-gate` enforces the OSS contract on every PR. Add your own doc-drift detection as a workflow once you adopt a toolchain.
 - **Agent skills** — `plan-feature`, `planning-philosophy`, `tdd`, `code-quality`, `gold-standard`, `ponytail`, and `skeleton-setup` are auto-loaded by AI coding assistants (Pi, Claude Code, Cursor, etc.).
 - **One-shot setup** — drop your context, run the skill, the skill folder disappears. Nothing to clean up after.
 - **8 SPDX licenses included** — `mit`, `apache-2.0`, `bsd-3-clause`, `mpl-2.0`, `gpl-3.0`, `agpl-3.0`, `lgpl-3.0`, `unlicense`.
@@ -37,9 +37,8 @@ You don't have to use the whole starter. You can copy individual skills into you
 # Copy one skill
 cp -r oss-starter/.agents/skills/tdd your-project/.agents/skills/
 
-# Or cherry-pick the workflows
+# Or cherry-pick the workflow
 cp oss-starter/.github/workflows/oss-gate.yml your-project/.github/workflows/
-cp oss-starter/.github/workflows/doc-drift.yml your-project/.github/workflows/
 ```
 
 ## Layout
@@ -56,8 +55,7 @@ cp oss-starter/.github/workflows/doc-drift.yml your-project/.github/workflows/
 ├── .pi/                            ← Pi harness config (MCP, providers)
 ├── .github/
 │   ├── workflows/
-│   │   ├── oss-gate.yml           ← file-presence checks on every PR
-│   │   └── doc-drift.yml          ← auto-sync docs on merge
+│   │   └── oss-gate.yml           ← file-presence checks on every PR
 │   ├── ISSUE_TEMPLATE/
 │   ├── PULL_REQUEST_TEMPLATE.md
 │   └── CODEOWNERS
@@ -84,7 +82,7 @@ cp oss-starter/.github/workflows/doc-drift.yml your-project/.github/workflows/
 
 oss-starter is itself an open-source project. PRs welcome. See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the contribution surface, "first PR" ideas, and the merge discipline.
 
-The `oss-gate` and `doc-drift` workflows run on every PR and on merge to `main`.
+The `oss-gate` workflow runs on every PR and on merge to `main`. Add additional workflows (lint, test, build) as your project adopts a toolchain.
 
 ## License
 

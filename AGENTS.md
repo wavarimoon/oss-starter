@@ -46,7 +46,7 @@ Halt and ask the user before: new dependencies · schema/auth/crypto changes · 
 
 ## Open-source readiness
 
-Before declaring work complete, see [`CONTRIBUTING.md`](./CONTRIBUTING.md) and ensure the `oss-gate` workflow (in `.github/workflows/oss-gate.yml`) is green. The `doc-drift` workflow (`.github/workflows/doc-drift.yml`) auto-syncs docs on merge — leave it alone. Before changing the contribution surface or any OSS-contract file, read [`CONTRIBUTING.md`](./CONTRIBUTING.md) § "How this project evolves."
+Before declaring work complete, see [`CONTRIBUTING.md`](./CONTRIBUTING.md) and ensure the `oss-gate` workflow (in `.github/workflows/oss-gate.yml`) is green. Before changing the contribution surface or any OSS-contract file, read [`CONTRIBUTING.md`](./CONTRIBUTING.md) § "How this project evolves."
 
 ## Plans workflow
 

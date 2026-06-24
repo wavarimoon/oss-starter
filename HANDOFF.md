@@ -23,6 +23,6 @@ _One bullet per decision, dated. Format: `- **Title** YYYY-MM-DD. Description. L
 ## Merge discipline
 
 - **OSS Gate:** PR cannot be merged until the `oss-gate` workflow is green.
-- **Doc drift:** on merge to `main`, `doc-drift.yml` auto-syncs docs if code changes drifted away from them.
+- **Doc drift:** none currently — add a doc-drift detection workflow once the project adopts a toolchain.
 - **Plan archive:** after a plan executes, run `./plans/archive.sh <slug>`. It writes a single `plans/archive/<slug>.md` (concatenated v1+v2+research+outcome), removes the in-flight folder, drops the entry from ROADMAP.md § In flight, and appends a one-line summary here.
 - **Engram:** before ending a session, update this file and call `mem_session_summary`.
