@@ -1,0 +1,161 @@
+name: oss-gate
+
+# The open-source-ready gate. Runs on every PR and every push to main.
+# Eight deterministic file-presence checks (numbered 1-5, 7-8, 10; check 6
+# was removed when CODEOWNERS became optional, check 9 was removed when
+# the archive model moved to single-file plans).
+# No language assumption, no runtime deps. Fails the PR if any check fails.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run OSS gate checks
+        id: checks
+        run: |
+          set -u
+          root="$GITHUB_WORKSPACE"
+          pass=0
+          fail=0
+
+          check() {
+            local name="$1"
+            local result="$2"   # "ok" or "fail"
+            local detail="$3"
+            if [ "$result" = "ok" ]; then
+              echo "✓ $name"
+              pass=$((pass + 1))
+            else
+              echo "✗ $name — $detail"
+              fail=$((fail + 1))
+            fi
+          }
+
+          # Check 1: README.md exists, non-empty, contains a `##` heading.
+          if [ -s "$root/README.md" ] && grep -qE '^## ' "$root/README.md"; then
+            check "README.md present with section heading" "ok" ""
+          else
+            check "README.md present with section heading" "fail" "README.md is missing, empty, or has no '## ' heading"
+          fi
+
+          # Check 2: CONTRIBUTING.md exists and contains "First PRs".
+          if [ -s "$root/CONTRIBUTING.md" ] && grep -qF "First PRs" "$root/CONTRIBUTING.md"; then
+            check "CONTRIBUTING.md has First PRs section" "ok" ""
+          else
+            check "CONTRIBUTING.md has First PRs section" "fail" "CONTRIBUTING.md is missing, empty, or has no 'First PRs' section"
+          fi
+
+          # Check 3: CODE_OF_CONDUCT.md exists and contains "Contributor Covenant".
+          if [ -s "$root/CODE_OF_CONDUCT.md" ] && grep -qF "Contributor Covenant" "$root/CODE_OF_CONDUCT.md"; then
+            check "CODE_OF_CONDUCT.md is Contributor Covenant" "ok" ""
+          else
+            check "CODE_OF_CONDUCT.md is Contributor Covenant" "fail" "CODE_OF_CONDUCT.md is missing, empty, or is not the Contributor Covenant"
+          fi
+
+          # Check 4: SECURITY.md exists and contains "vulnerability".
+          if [ -s "$root/SECURITY.md" ] && grep -qiF "vulnerability" "$root/SECURITY.md"; then
+            check "SECURITY.md covers vulnerabilities" "ok" ""
+          else
+            check "SECURITY.md covers vulnerabilities" "fail" "SECURITY.md is missing, empty, or does not mention vulnerabilities"
+          fi
+
+          # Check 5: .github/PULL_REQUEST_TEMPLATE.md exists and references CONTRIBUTING.md.
+          if [ -s "$root/.github/PULL_REQUEST_TEMPLATE.md" ] && grep -qF "CONTRIBUTING.md" "$root/.github/PULL_REQUEST_TEMPLATE.md"; then
+            check "PR template references CONTRIBUTING.md" "ok" ""
+          else
+            check "PR template references CONTRIBUTING.md" "fail" ".github/PULL_REQUEST_TEMPLATE.md is missing, empty, or does not reference CONTRIBUTING.md"
+          fi
+
+          # Check 6: (removed) CODEOWNERS check — CODEOWNERS is optional and created by skeleton-setup from MAINTAINERS.md.
+
+          # Check 7: plans/in-flight/*/v2.md ↔ plans/ROADMAP.md consistency.
+          # If any in-flight plan folder exists with a v2.md, ROADMAP.md must
+          # have a matching entry under the "## In flight" section. This
+          # catches the common drift: someone wrote a v2.md and forgot to
+          # add the ROADMAP entry.
+          inflight_ok=1
+          inflight_detail=""
+          if [ -d "$root/plans/in-flight" ]; then
+            for slug_dir in "$root/plans/in-flight"/*/; do
+              [ -d "$slug_dir" ] || continue
+              slug=$(basename "$slug_dir")
+              if [ -s "${slug_dir}v2.md" ]; then
+                if ! grep -qF "$slug" "$root/plans/ROADMAP.md"; then
+                  inflight_ok=0
+                  inflight_detail="ROADMAP.md is missing an entry for in-flight plan folder '$slug'"
+                  break
+                fi
+              fi
+            done
+          fi
+          if [ "$inflight_ok" = "1" ]; then
+            check "ROADMAP.md tracks in-flight plans" "ok" ""
+          else
+            check "ROADMAP.md tracks in-flight plans" "fail" "$inflight_detail"
+          fi
+
+          # Check 8: plans/ROADMAP.md has the two required sections.
+          # Backlog / In flight — guards against accidental reformat that
+          # breaks the plan-feature skill's parsing. The "Executed" section
+          # was removed when the skeleton's archive model moved to a single
+          # file per plan under plans/archive/; the executed history is now
+          # implicit in the archive/ folder itself, so ROADMAP only tracks
+          # what is upcoming or in-progress.
+          roadmap_ok=1
+          roadmap_detail=""
+          for section in "Backlog" "In flight"; do
+            if ! grep -qE "^## $section" "$root/plans/ROADMAP.md"; then
+              roadmap_ok=0
+              roadmap_detail="ROADMAP.md is missing the '## $section' section"
+              break
+            fi
+          done
+          if [ "$roadmap_ok" = "1" ]; then
+            check "ROADMAP.md has Backlog/In flight sections" "ok" ""
+          else
+            check "ROADMAP.md has Backlog/In flight sections" "fail" "$roadmap_detail"
+          fi
+
+          # Check 9: (removed) was archive hygiene — moot now that executed
+          # plans live in plans/archive/<slug>.md (single files) and the
+          # ROADMAP no longer tracks Executed entries.
+
+          # Check 10: no orphan flat-folder plan files.
+          # The folder-per-plan structure means plan files must live under
+          # plans/in-flight/ or plans/archive/. A loose file like
+          # plans/my-plan-v2.md at the top level is the old pattern sneaking
+          # back in — flag it so the executor fixes it.
+          orphan_ok=1
+          orphan_detail=""
+          # Top-level .md files in plans/ are allowed only for: README.md and ROADMAP.md.
+          for f in "$root/plans"/*.md; do
+            [ -f "$f" ] || continue
+            base=$(basename "$f")
+            case "$base" in
+              README.md|ROADMAP.md) ;;
+              *) orphan_ok=0; orphan_detail="orphan flat-folder plan file at plans/$base — move it under plans/in-flight/ or plans/archive/" ;;
+            esac
+          done
+          if [ "$orphan_ok" = "1" ]; then
+            check "No orphan flat-folder plan files at plans/" "ok" ""
+          else
+            check "No orphan flat-folder plan files at plans/" "fail" "$orphan_detail"
+          fi
+
+          echo
+          echo "Summary: $pass passed, $fail failed"
+
+          if [ "$fail" -gt 0 ]; then
+            echo "NOT READY — $fail issue(s) above"
+            exit 1
+          fi
+
+          echo "READY"

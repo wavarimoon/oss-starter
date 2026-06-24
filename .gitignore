@@ -1,0 +1,30 @@
+# .gitignore (lean — extend as the project lands)
+#
+# This file holds ONLY shared, project-level rules. Personal OS/editor
+# preferences belong in your global gitignore:
+#
+#   git config --global core.excludesfile ~/.gitignore_global
+#   https://github.com/github/gitignore/tree/main/Global
+#
+# When the project language is chosen, ADD a block from:
+#   https://github.com/github/gitignore
+# Don't pre-commit commented-out blocks for unchosen languages.
+
+# Secrets & env files — never commit
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.p12
+
+# Local scratch
+.tmp/
+*.local
+
+# Common build outputs — safe defaults, expand as needed
+node_modules/
+dist/
+build/
+AUDIT-REPORT.md
+# audit reports from parallel sessions

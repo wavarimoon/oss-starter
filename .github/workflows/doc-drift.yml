@@ -1,0 +1,40 @@
+name: doc-drift
+
+# Auto-maintain documentation. On every push to main, detects whether
+# the docs (README.md, CONTRIBUTING.md, SECURITY.md, .agents/skills/*,
+# plans/*) drifted from the code change. If yes, opens a follow-up PR
+# labeled `docs/auto-fix`. If no, exits cleanly.
+#
+# Pattern: github/gh-aw/docs-sync (no API key required).
+# Alternatives exist (Red Hat Code-to-Docs, dosu) but this is the
+# simplest starting point.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  docs-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect and fix documentation drift
+        uses: github/gh-aw/docs-sync@v1
+        with:
+          paths: |
+            README.md
+            CONTRIBUTING.md
+            SECURITY.md
+            CODE_OF_CONDUCT.md
+            .agents/skills/
+            plans/
+          labels: docs/auto-fix
