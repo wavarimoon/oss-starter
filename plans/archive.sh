@@ -1,165 +1,119 @@
 #!/usr/bin/env bash
-# plans/archive.sh — archive an executed plan as a single file.
-#
-# Usage:
-#   ./plans/archive.sh <slug> [one-line outcome]
-#
-# Example:
-#   ./plans/archive.sh my-feature "Added feature X via API; closed #42."
-#
-# Pre-conditions:
-#   - plans/in-flight/<slug>/v2.md exists (the plan was executed)
-#   - plans/ROADMAP.md has an "In flight" entry linking to <slug>
-#
-# What this does (atomic, idempotent):
-#   1. Concatenate plans/in-flight/<slug>/{v1,v2,research}.md into
-#      plans/archive/<slug>.md (single file, the full audit trail).
-#   2. Delete plans/in-flight/<slug>/.
-#   3. Flip the ROADMAP.md entry from "In flight" to "Executed"
-#      (rewrites the path: in-flight/<slug>/v2.md → archive/<slug>.md).
-#   4. Append a one-line entry to HANDOFF.md § Recent decisions.
-#
-# Idempotent: re-running on an already-archived plan is a noop.
-
 set -euo pipefail
 
-if [ $# -lt 1 ] || [ $# -gt 2 ]; then
-    echo "Usage: $0 <slug> [one-line outcome]" >&2
-    echo "Example: $0 my-feature 'Added feature X.'" >&2
-    exit 64
+# Archive a plan from plans/todo/<slug>/ to plans/archive/<slug>.md
+#
+# Usage: archive.sh [--dry-run] <slug> [outcome]
+
+DRY_RUN=false
+if [[ "${1:-}" == "--dry-run" ]]; then
+  DRY_RUN=true
+  shift
+fi
+
+if [[ $# -lt 1 ]]; then
+  echo "Usage: archive.sh [--dry-run] <slug> [outcome]" >&2
+  exit 1
 fi
 
 slug="$1"
-outcome="${2:-Executed. See file for details.}"
+outcome="${2:-}"
 
-root="$(cd "$(dirname "$0")/.." && pwd)"
-inflight="$root/plans/in-flight/$slug"
-archive="$root/plans/archive/$slug.md"
-roadmap="$root/plans/ROADMAP.md"
-handoff="$root/HANDOFF.md"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+TODO_DIR="$SCRIPT_DIR/todo/$slug"
+ARCHIVE_DIR="$SCRIPT_DIR/archive"
+ARCHIVE_FILE="$ARCHIVE_DIR/$slug.md"
+HANDOFF="$SCRIPT_DIR/../HANDOFF.md"
 
-# Idempotency: already archived?
-if [ -f "$archive" ] && [ ! -d "$inflight" ]; then
-    echo "✓ Plan '$slug' is already archived at $archive" >&2
-    echo "  Nothing to do. (Idempotent.)" >&2
-    exit 0
+# --- Idempotency ---
+if [[ -f "$ARCHIVE_FILE" ]]; then
+  echo "Already archived: $ARCHIVE_FILE" >&2
+  exit 0
 fi
 
-# Pre-checks
-if [ ! -d "$inflight" ]; then
-    echo "✗ No plan folder found at $inflight" >&2
+if [[ ! -d "$TODO_DIR" ]]; then
+  echo "No plan found at $TODO_DIR" >&2
+  exit 1
+fi
+
+# --- Collect parts ---
+content=""
+for part in v1.md v2.md research.md; do
+  file="$TODO_DIR/$part"
+  if [[ -f "$file" ]]; then
+    content+="# $part"$'\n\n'
+    content+="$(cat "$file")"$'\n\n'
+    content+='---'$'\n\n'
+  fi
+done
+
+if [[ -n "$outcome" ]]; then
+  content+="# outcome"$'\n\n'
+  content+="$outcome"$'\n\n'
+  content+='---'$'\n\n'
+fi
+
+# --- Dry run ---
+if $DRY_RUN; then
+  echo "Would create: $ARCHIVE_FILE"
+  echo "Would delete: $TODO_DIR"
+  echo "Would append to: $HANDOFF"
+  echo ""
+  echo "Content preview (${#content} chars):"
+  echo "$content" | head -20
+  exit 0
+fi
+
+# --- Write archive (atomic via tmp) ---
+mkdir -p "$ARCHIVE_DIR"
+tmp=$(mktemp "$ARCHIVE_DIR/.tmp-archive-XXXXXX.md")
+printf '%s' "$content" > "$tmp"
+
+# Verify awk produced non-empty output
+if [[ ! -s "$tmp" ]]; then
+  echo "Error: generated archive content is empty for slug '$slug'" >&2
+  rm -f "$tmp"
+  exit 1
+fi
+
+mv "$tmp" "$ARCHIVE_FILE"
+echo "Archived: $ARCHIVE_FILE"
+
+# --- Remove the todo folder ---
+rm -rf "$TODO_DIR"
+echo "Removed: $TODO_DIR"
+
+# --- Append to HANDOFF.md ---
+if [[ -f "$HANDOFF" ]] && ! grep -q "archive/$slug" "$HANDOFF"; then
+  tmp_handoff=$(mktemp "${HANDOFF}.tmp-XXXXXX")
+  awk -v slug="$slug" '
+    /## Recent decisions/ {
+      found=1
+      print
+      next
+    }
+    found && /^##/ {
+      # Hit next section without finding a bullet
+      printf "\n- $(date +%F) — Archived plan: %s\n\n", slug
+      found=0
+    }
+    {
+      if (found && index($0, slug) > 0) next
+      print
+    }
+    END {
+      if (found) {
+        printf "- $(date +%F) — Archived plan: %s\n\n", slug
+      }
+    }
+  ' "$HANDOFF" > "$tmp_handoff"
+
+  if [[ -s "$tmp_handoff" ]]; then
+    mv "$tmp_handoff" "$HANDOFF"
+    echo "Updated: $HANDOFF"
+  else
+    echo "Error: awk produced empty output for HANDOFF update" >&2
+    rm -f "$tmp_handoff"
     exit 1
+  fi
 fi
-
-if [ ! -s "$inflight/v2.md" ]; then
-    echo "✗ $inflight/v2.md is missing or empty — can't archive an unstarted plan" >&2
-    exit 1
-fi
-
-mkdir -p "$(dirname "$archive")"
-
-# Step 1: concatenate plan artifacts into a single archive file.
-# v2.md is required; v1.md and research.md are optional (a plan may be
-# small enough to skip v1 / research and produce only v2).
-echo "→ Writing $archive (v2.md is required; v1.md + research.md are optional)"
-{
-    echo "# $slug"
-    echo
-    echo "**Outcome:** $outcome"
-    echo
-    echo "**Archived on:** $(date -u +%Y-%m-%d)"
-    echo
-    echo "---"
-    echo
-    if [ -s "$inflight/v1.md" ]; then
-        echo "## v1.md (codebase-research-only draft, immutable)"
-        echo
-        cat "$inflight/v1.md"
-        echo
-        echo "---"
-        echo
-    else
-        echo "_v1.md not present — plan was small enough to skip the v1 draft._"
-        echo
-        echo "---"
-        echo
-    fi
-    echo "## v2.md (executable plan, the one we executed from)"
-    echo
-    cat "$inflight/v2.md"
-    echo
-    echo "---"
-    echo
-    if [ -s "$inflight/research.md" ]; then
-        echo "## research.md (research findings, 2026-current sources)"
-        echo
-        cat "$inflight/research.md"
-    else
-        echo "_research.md not present — no external research was needed._"
-    fi
-} > "$archive"
-
-# Step 2: remove the in-flight folder
-echo "→ Removing $inflight"
-rm -rf "$inflight"
-
-# Step 3: remove ROADMAP.md entry from In flight (executed plans now live in
-# plans/archive/<slug>.md as the source of truth — ROADMAP only tracks upcoming).
-if [ -s "$roadmap" ]; then
-    if grep -qF "$slug" "$roadmap"; then
-        if awk -v slug="$slug" '
-            /^## In flight/{flag=1; next}
-            /^## /{flag=0}
-            flag && $0 ~ slug {found=1}
-            END {exit !found}
-        ' "$roadmap"; then
-            echo "→ Removing $slug entry from ROADMAP.md § In flight (now in plans/archive/$slug.md)"
-            tmp_roadmap=$(mktemp)
-            awk -v slug="$slug" '
-                /^## In flight/ { inflight=1; print; next }
-                /^## / { inflight=0; print; next }
-                inflight && $0 ~ slug { next }
-                { print }
-            ' "$roadmap" > "$tmp_roadmap"
-            mv "$tmp_roadmap" "$roadmap"
-        else
-            echo "✓ $slug already removed from ROADMAP.md § In flight"
-        fi
-    else
-        echo "⚠ $slug not found in ROADMAP.md (already archived?)" >&2
-    fi
-fi
-
-# Step 4: append to HANDOFF.md § Recent decisions
-if [ -s "$handoff" ]; then
-    if ! grep -qF "$slug" "$handoff"; then
-        echo "→ Appending entry to HANDOFF.md § Recent decisions"
-        tmp_handoff=$(mktemp)
-        awk -v slug="$slug" -v outcome="$outcome" '
-            /^## Recent decisions/ { in_section=1; print; next }
-            in_section && /^## / { in_section=0 }
-            in_section && NF > 0 && !inserted {
-                print
-                print "- **Plan archived: " slug "** — " outcome
-                inserted = 1
-                next
-            }
-            { print }
-            END {
-                if (!inserted) {
-                    print "<!-- archive.sh: WARNING — could not find Recent decisions section -->"
-                }
-            }
-        ' "$handoff" > "$tmp_handoff"
-        mv "$tmp_handoff" "$handoff"
-    else
-        echo "✓ $slug already mentioned in HANDOFF.md"
-    fi
-fi
-
-echo
-echo "✓ Archive ritual complete."
-echo "  Result: plans/archive/$slug.md"
-echo "  Reminders:"
-echo "  - Verify ROADMAP.md is correct: $roadmap"
-echo "  - oss-gate workflow will run on next PR and confirm the plan checks are green."

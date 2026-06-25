@@ -19,10 +19,11 @@ _Items that cannot proceed and why. Halt-and-ask triggers belong here until reso
 
 _One bullet per decision, dated. Format: `- **Title** YYYY-MM-DD. Description. Link to plan.`_
 - **Plan archived: 2026-06-23-setup-folder-refactor** — Consolidated setup assets INTO the skill folder (.agents/skills/skeleton-setup/). One rm -rf removes the entire kill folder. Q1 (refuse empty draft), Q2 (license confirmation), Q3 (pre-cleanup offer) baked into the agent flow. 9/9 oss-gate checks pass. Fixed: ROOT path resolution (2->3 ..), INPUT_GUIDE.md moved out of content/ (collision with apply-all).
+- **2026-06-25** — Refactored plans system: removed ROADMAP.md and plans/in-flight/, replaced with plans/todo/ as the single queue. archive.sh rewritten from scratch. oss-gate reduced from 8 to 6 checks.
 
 ## Merge discipline
 
 - **OSS Gate:** PR cannot be merged until the `oss-gate` workflow is green.
 - **Doc drift:** none currently — add a doc-drift detection workflow once the project adopts a toolchain.
-- **Plan archive:** after a plan executes, run `./plans/archive.sh <slug>`. It writes a single `plans/archive/<slug>.md` (concatenated v1+v2+research+outcome), removes the in-flight folder, drops the entry from ROADMAP.md § In flight, and appends a one-line summary here.
+- **Plan archive:** after a plan executes, run `./plans/archive.sh <slug>`. It writes `plans/archive/<slug>.md`, removes `plans/todo/<slug>/`, and appends a one-line entry to `HANDOFF.md § Recent decisions`.
 - **Engram:** before ending a session, update this file and call `mem_session_summary`.

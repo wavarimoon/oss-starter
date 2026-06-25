@@ -50,7 +50,7 @@ Before declaring work complete, see [`CONTRIBUTING.md`](./CONTRIBUTING.md) and e
 
 ## Plans workflow
 
-For any non-trivial work (5+ files, new deps, schema/auth/crypto changes), start at [`plans/ROADMAP.md`](./plans/ROADMAP.md) — the Backlog section lists known upcoming plans, In flight lists active ones. Run `/skill:plan-feature` to produce a `plans/in-flight/<slug>/v2.md`, execute it, then run `./plans/archive.sh <slug>` to move the plan to `archive/<slug>.md` and remove its entry from ROADMAP.
+For any non-trivial work (5+ files, new deps, schema/auth/crypto changes), drop a slug folder under [`plans/todo/`](./plans/todo/) to start a plan. Run `/skill:plan-feature` to produce a `plans/todo/<slug>/v2.md`, execute it, then run `./plans/archive.sh <slug>` to archive it to `plans/archive/<slug>.md` and remove the `todo/<slug>/` folder.
 
 ## Memory & continuity
 

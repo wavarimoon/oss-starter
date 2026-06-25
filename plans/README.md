@@ -1,60 +1,62 @@
 # Plans
 
-This directory holds feature plans produced by the [`plan-feature`](../.agents/skills/plan-feature/SKILL.md) workflow, plus the [ROADMAP.md](./ROADMAP.md) to-do list.
+This directory holds implementation plans. Every non-trivial feature, refactor, or migration gets a plan before code is written.
 
-A fresh project starts with `plans/` containing only this file and `ROADMAP.md`. The `in-flight/` and `archive/` subfolders appear as work happens.
-
-## Layout
+## Directory layout
 
 ```
 plans/
-├── README.md        ← you are here (workflow + layout)
-├── ROADMAP.md       ← the to-do list (Backlog / In flight)
-├── archive.sh       ← one-command archive ritual
-├── in-flight/       ← plans currently being written or executed (created on first plan)
+├── README.md        ← you are here
+├── archive.sh       ← run to archive a completed plan
+├── todo/            ← active plans (one folder per plan)
 │   └── <slug>/
-│       ├── v1.md
-│       ├── v2.md
-│       └── research.md
-└── archive/         ← executed plans, one .md file per plan
+│       ├── v1.md    ← initial approach (may be superseded)
+│       ├── v2.md    ← revised approach (required)
+│       └── research.md  ← investigation notes, spikes, references
+└── archive/
     └── <slug>.md    ← concatenated v1 + v2 + research + outcome
 ```
 
-## Workflow (one-liner)
+## How it works
 
-**Plan → in-flight → execute → archive.sh → done.**
-
-```bash
-# 1. Start a plan (assumes the slug is already in ROADMAP.md § Backlog)
-/skill:plan-feature my-feature       # → produces in-flight/my-feature/{v1,v2,research}.md
-
-# 2. Execute the plan (write code, open PRs, merge)
-
-# 3. Archive it (one command does everything atomically)
-./plans/archive.sh my-feature "One-line outcome description."
-
-# 4. Push and let oss-gate verify
-git push
+```
+Plan → todo/<slug>/ → execute → archive.sh → archive/<slug>.md → done
 ```
 
-The `oss-gate` workflow (checks 7–9) verifies the result is consistent on every PR.
+1. **Start a plan** — create `plans/todo/<slug>/` with at least a `v2.md`.
+2. **Execute** — work through the plan. Update `v2.md` as the approach evolves. Spawn `v1.md` if the first attempt was superseded.
+3. **Archive** — run `./plans/archive.sh <slug> [outcome]`. This concatenates the plan files into `plans/archive/<slug>.md`, removes the `todo/<slug>/` folder, and appends a line to `HANDOFF.md § Recent decisions`.
 
-## Plan versioning
+A plan exists when its folder exists under `todo/`. It is done when `archive.sh` moves it to `archive/`. There is no separate backlog list or in-flight list — `todo/` is the only queue.
 
-Each plan folder under `in-flight/` contains three files:
+## Versioning rationale
 
-- `<slug>-v1.md` — codebase-research-only draft. **Immutable** historical record.
-- `<slug>-v2.md` — refined executable plan after research. **The plan we execute from.**
-- `<slug>-research.md` — research findings (per-dependency, per-pattern, with 2026-current sources).
+Plans carry three versioned documents:
 
-When `archive.sh` runs, these three are concatenated into a single `archive/<slug>.md` with an `**Outcome:**` header.
+- **v1.md** — the initial approach. Kept for the audit trail even if v2 superseded it completely.
+- **v2.md** — the revised or final approach. This is the primary document.
+- **research.md** — investigation notes, spikes, benchmark results, or reference material that informed the plan.
 
-Why both v1 and v2 exist:
-- Re-reading v1 + v2 reconstructs the full decision context if memory is stale.
-- The diff between v1 and v2 is a retrospective signal — heavily edited sections show where internal research wasn't sufficient.
-- Audit trail: every choice has a visible "before" and "after."
+Keeping both v1 and v2 lets future agents (and humans) understand *why* the plan changed, not just what it became. This is especially valuable for cross-harness work where different agents may pick up at different points.
+
+## Commands
+
+```bash
+# Start a plan
+mkdir -p plans/todo/my-feature
+$EDITOR plans/todo/my-feature/v2.md
+
+# Archive a completed plan
+./plans/archive.sh my-feature "Decided to use approach X over Y"
+
+# Dry run (see what would happen)
+./plans/archive.sh --dry-run my-feature
+```
 
 ## Index
 
-- [`ROADMAP.md`](./ROADMAP.md) — the live to-do list (Backlog, In flight)
-- [`archive.sh`](./archive.sh) — the archive ritual
+<!-- Update when plans are added or archived -->
+
+| Plan | Status | Date |
+|------|--------|------|
+| _(none yet)_ | — | — |

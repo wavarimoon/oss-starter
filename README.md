@@ -74,8 +74,14 @@ cp oss-starter/.github/workflows/oss-gate.yml your-project/.github/workflows/
 │       └── ponytail/
 └── plans/
     ├── README.md
-    ├── ROADMAP.md                  ← Backlog + In flight only (no archive)
-    └── archive.sh
+    ├── archive.sh
+    ├── todo/
+    │   └── <slug>/
+    │       ├── v1.md
+    │       ├── v2.md
+    │       └── research.md
+    └── archive/
+        └── <slug>.md
 ```
 
 ## Contributing to oss-starter itself
